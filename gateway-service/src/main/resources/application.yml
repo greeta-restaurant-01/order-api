@@ -1,6 +1,15 @@
+server:
+  netty:
+    connection-timeout: 20s
+    idle-timeout: 15s
+  shutdown: graceful
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 15s
   cloud:
     bootstrap:
       enabled: true
@@ -8,10 +17,34 @@ spring:
       ribbon:
         enabled: false
     gateway:
+      httpclient:
+        connect-timeout: 2000 # 2s
+        response-timeout: 20s
+        pool:
+          type: elastic
+          max-idle-time: 15s
+          max-life-time: 60s
       default-filters:
         - SaveSession
         - TokenRelay
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin Access-Control-Request-Headers, RETAIN_FIRST
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+              requestedTokens: 1
+        - name: Retry
+          args:
+            retries: 3
+            methods: GET
+            series: SERVER_ERROR
+            exceptions: java.io.IOException, java.util.concurrent.TimeoutException
+            backoff:
+              firstBackoff: 50ms
+              maxBackOff: 500ms
+              factor: 2
+              basedOnPreviousValue: false
       globalcors:
         add-to-simple-url-handler-mapping: true
         corsConfigurations:
@@ -24,45 +57,78 @@ spring:
         locator:
           enabled: true
       routes:
+        - id: catalog
+          uri: ${CATALOG_SERVICE_URL:http://localhost:9001}
+          predicates:
+            - Path=/catalog/**
+          filters:
+            - RewritePath=/catalog/(?<path>.*), /$\{path}
+            - name: CircuitBreaker
+              args:
+                name: catalogCircuitBreaker
+                fallbackUri: forward:/catalog-fallback
         - id: order
-          uri: http://localhost:9081
+          uri: ${ORDER_SERVICE_URL:http://localhost:9002}
           predicates:
             - Path=/order/**
           filters:
             - RewritePath=/order/(?<path>.*), /$\{path}
-        - id: erp
-          uri: http://localhost:9082
-          predicates:
-            - Path=/erp/**
-          filters:
-            - RewritePath=/erp/(?<path>.*), /$\{path}
+            - name: CircuitBreaker
+              args:
+                name: orderCircuitBreaker
+
+  redis:
+    connect-timeout: 20s
+    host: localhost
+    port: 6379
+    timeout: 20s
+  session:
+    store-type: redis
+    timeout: 10m
+    redis:
+      namespace: polar:gateway
+
   keycloak:
-      server-url: http://localhost:8080
+    server-url: http://localhost:8080
+    server-external-url: http://localhost:8080
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${spring.keycloak.server-url}/realms/order-realm
-          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+          issuer-uri: ${spring.keycloak.server-external-url}/realms/book-realm
+          jwk-set-uri: ${spring.keycloak.server-url}/realms/book-realm/protocol/openid-connect/certs
 
 jwt:
   auth:
     converter:
-      resource-id: order-app
+      resource-id: book-app
       principal-attribute: preferred_username
 
-order-app:
+book-app:
   base-url: http://localhost:3000
-  redirect-url: ${order-app.base-url}/*
+  redirect-url: ${book-app.base-url}/*
 
-server:
-  forward-headers-strategy: framework
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        permittedNumberOfCallsInHalfOpenState: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15000
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
 
 logging:
+  group:
+    circuitbreaker: io.github.resilience4j, org.springframework.cloud.circuitbreaker
   pattern: 
     level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
     console: "%d{yyyy-MM-dd HH:mm:ss} ${LOG_LEVEL_PATTERN:-%5p} %m%n"
   level:
+    circuitbreaker: info
     org.springframework.cloud.kubernetes: TRACE
 
 info:
@@ -103,7 +169,7 @@ springdoc:
       # - url: /v3/api-docs
       #   name: API Gateway Service
       #   primaryName: API Gateway Service
+      - url: /catalog/v3/api-docs
+        name: Catalog Service
       - url: /order/v3/api-docs
         name: Order Service
-      - url: /erp/v3/api-docs
-        name: ERP Service

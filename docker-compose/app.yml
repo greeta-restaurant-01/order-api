@@ -1,0 +1,161 @@
+version: "3.8"
+services:
+
+  # Applications
+
+  customer:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+    image: "customer-service"
+    container_name: "customer"
+    ports:
+      - 9001:9001
+      - 8001:8001
+    environment:
+      - SERVER_PORT=9001
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8001
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://order-postgres:5432/polardb_customer
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  restaurant:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+    image: "restaurant-service"
+    container_name: "restaurant"
+    ports:
+      - 9002:9002
+      - 8002:8002
+    environment:
+      - SERVER_PORT=9002
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8002
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://order-postgres:5432/polardb_restaurant
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  payment:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+    image: "payment-service"
+    container_name: "payment"
+    ports:
+      - 9003:9003
+      - 8003:8003
+    environment:
+      - SERVER_PORT=9003
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8003
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://order-postgres:5432/polardb_payment
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  order:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+      - order-rabbitmq
+    image: "order-service"
+    container_name: "order"
+    ports:
+      - 9004:9004
+      - 8004:8004
+    environment:
+      - SERVER_PORT=9004
+      # Buildpacks environment variable to enable debug through a socket on port 8002
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8004
+      - SPRING_R2DBC_URL=r2dbc:postgresql://order-postgres:5432/polardb_order
+      - SPRING_FLYWAY_URL=jdbc:postgresql://order-postgres:5432/polardb_order
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+  
+  gateway:
+    depends_on:
+      - order-keycloak
+      - order-redis
+    image: "gateway-service"
+    container_name: "gateway"
+    ports:
+      - 9000:9000
+      - 8000:8000
+    environment:
+      - SERVER_PORT=9000
+      # Buildpacks environment variable to enable debug through a socket on port 8000
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8000
+      - CUSTOMER_SERVICE_URL=http://customer:9001
+      - RESTAURANT_SERVICE_URL=http://restaurant:9002
+      - PAYMENT_SERVICE_URL=http://payment:9003
+      - ORDER_SERVICE_URL=http://order:9004
+      - SPRING_REDIS_HOST=order-redis
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+  
+  # Backing Services
+
+  order-postgres:
+    image: "postgres:14.4"
+    container_name: "order-postgres"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./docker-conf/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  order-redis:
+    image: "redis:7.0"
+    container_name: "order-redis"
+    ports:
+      - 6379:6379
+
+  order-rabbitmq:
+    image: rabbitmq:3.10-management
+    container_name: order-rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./docker-conf/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+  keycloak-postgres:
+    image: postgres:15.3
+    container_name: keycloak_postgres
+    ports:
+      - "5433:5433"
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: "pg_isready -U postgres"
+  
+  order-keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: order-keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=keycloak-postgres
+      - KC_DB_URL_DATABASE=keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=password
+      - KC_DB_PORT=5433
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8080:8080"
+    command: start-dev
+    depends_on:
+      - keycloak-postgres
+    healthcheck:
+      test: "curl -f http://order-keycloak:8080/health/ready || exit 1"

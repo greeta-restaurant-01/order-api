@@ -3,7 +3,7 @@ on: push
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_OWNER: greeta-order-02
+  IMAGE_OWNER: greeta-restaurant-01
   VERSION: ${{ github.sha }}
 
 jobs:
@@ -26,21 +26,28 @@ jobs:
           cache: maven
       - name: Build
         run: |
-          mvn clean install -DskipTests
+          mvn clean install
       - name: Build container images
         run: |
-          cd order-service
+          cd customer-service/customer-container
+          mvn spring-boot:build-image -DskipTests \
+            -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/customer-service:${{ env.VERSION }}
+          cd ../../
+          cd order-service/order-container
           mvn spring-boot:build-image -DskipTests \
             -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/order-service:${{ env.VERSION }}
-          cd ../
-          cd erp-service
+          cd ../../
+          cd payment-service/payment-container
           mvn spring-boot:build-image -DskipTests \
-            -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/erp-service:${{ env.VERSION }}
-          cd ../
+            -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/payment-service:${{ env.VERSION }} 
+          cd ../../
+          cd restaurant-service/restaurant-container
+          mvn spring-boot:build-image -DskipTests \
+            -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/restaurant-service:${{ env.VERSION }}
+          cd ../../
           cd gateway-service
           mvn spring-boot:build-image -DskipTests \
             -Dspring-boot.build-image.imageName=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/gateway-service:${{ env.VERSION }}
-
       - name: Log into container registry
         uses: docker/login-action@v2
         with:
@@ -49,19 +56,29 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish container image
         run:  |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/customer-service:${{ env.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/order-service:${{ env.VERSION }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/erp-service:${{ env.VERSION }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/payment-service:${{ env.VERSION }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/restaurant-service:${{ env.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/gateway-service:${{ env.VERSION }}
       - name: Publish container image (latest)
         run: |
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/customer-service:${{ env.VERSION }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/customer-service:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/customer-service:latest
+          
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/order-service:${{ env.VERSION }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/order-service:latest
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/order-service:latest
           
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/erp-service:${{ env.VERSION }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/erp-service:latest
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/erp-service:latest
-                    
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/payment-service:${{ env.VERSION }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/payment-service:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/payment-service:latest
+          
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/restaurant-service:${{ env.VERSION }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/restaurant-service:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/restaurant-service:latest
+          
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/gateway-service:${{ env.VERSION }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/gateway-service:latest
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/gateway-service:latest
