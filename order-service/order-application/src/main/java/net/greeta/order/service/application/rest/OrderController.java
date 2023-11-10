@@ -1,10 +1,10 @@
 package net.greeta.order.service.application.rest;
 
-import net.greeta.order.service.domain.dto.create.CreateOrderCommand;
-import net.greeta.order.service.domain.dto.create.CreateOrderResponse;
-import net.greeta.order.service.domain.dto.track.TrackOrderQuery;
-import net.greeta.order.service.domain.dto.track.TrackOrderResponse;
-import net.greeta.order.service.domain.ports.input.service.OrderApplicationService;
+import net.greeta.order.domain.dto.create.CreateOrderCommand;
+import net.greeta.order.domain.dto.create.CreateOrderResponse;
+import net.greeta.order.domain.dto.track.TrackOrderQuery;
+import net.greeta.order.domain.dto.track.TrackOrderResponse;
+import net.greeta.order.domain.ports.input.service.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +13,6 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/orders", produces = "application/vnd.api.v1+json")
 public class OrderController {
 
     private final OrderApplicationService orderApplicationService;

@@ -2,7 +2,7 @@ package net.greeta.order.kafka.producer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.greeta.order.service.domain.exception.OrderDomainException;
+import net.greeta.order.domain.exception.OrderDomainException;
 import net.greeta.order.outbox.OutboxStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;

@@ -1,9 +1,9 @@
 package net.greeta.order.service.application.exception.handler;
 
-import net.greeta.order.application.handler.ErrorDTO;
-import net.greeta.order.application.handler.GlobalExceptionHandler;
-import net.greeta.order.service.domain.exception.OrderDomainException;
-import net.greeta.order.service.domain.exception.OrderNotFoundException;
+import net.greeta.order.common.application.handler.ErrorDTO;
+import net.greeta.order.common.application.handler.GlobalExceptionHandler;
+import net.greeta.order.domain.exception.OrderDomainException;
+import net.greeta.order.domain.exception.OrderNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;

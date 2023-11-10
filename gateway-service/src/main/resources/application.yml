@@ -57,16 +57,16 @@ spring:
         locator:
           enabled: true
       routes:
-        - id: catalog
-          uri: ${CATALOG_SERVICE_URL:http://localhost:9001}
+        - id: customer
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:9001}
           predicates:
-            - Path=/catalog/**
+            - Path=/customer/**
           filters:
-            - RewritePath=/catalog/(?<path>.*), /$\{path}
+            - RewritePath=/customer/(?<path>.*), /$\{path}
             - name: CircuitBreaker
               args:
-                name: catalogCircuitBreaker
-                fallbackUri: forward:/catalog-fallback
+                name: customerCircuitBreaker
+                fallbackUri: forward:/customer-fallback
         - id: order
           uri: ${ORDER_SERVICE_URL:http://localhost:9002}
           predicates:
@@ -86,7 +86,7 @@ spring:
     store-type: redis
     timeout: 10m
     redis:
-      namespace: polar:gateway
+      namespace: order:gateway
 
   keycloak:
     server-url: http://localhost:8080
@@ -95,18 +95,18 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${spring.keycloak.server-external-url}/realms/book-realm
-          jwk-set-uri: ${spring.keycloak.server-url}/realms/book-realm/protocol/openid-connect/certs
+          issuer-uri: ${spring.keycloak.server-external-url}/realms/order-realm
+          jwk-set-uri: ${spring.keycloak.server-url}/realms/order-realm/protocol/openid-connect/certs
 
 jwt:
   auth:
     converter:
-      resource-id: book-app
+      resource-id: order-app
       principal-attribute: preferred_username
 
-book-app:
+order-app:
   base-url: http://localhost:3000
-  redirect-url: ${book-app.base-url}/*
+  redirect-url: ${order-app.base-url}/*
 
 resilience4j:
   circuitbreaker:
@@ -169,7 +169,7 @@ springdoc:
       # - url: /v3/api-docs
       #   name: API Gateway Service
       #   primaryName: API Gateway Service
-      - url: /catalog/v3/api-docs
-        name: Catalog Service
+      - url: /customer/v3/api-docs
+        name: Customer Service
       - url: /order/v3/api-docs
         name: Order Service

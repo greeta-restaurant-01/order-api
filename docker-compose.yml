@@ -1,0 +1,277 @@
+version: "3.8"
+services:
+  # Applications
+
+  customer:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+      - kafka-manager
+    image: "customer-service"
+    container_name: "customer"
+    ports:
+      - 9001:9001
+      - 8001:8001
+    environment:
+      - SERVER_PORT=9001
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8001
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  order:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+      - kafka-manager
+    image: "order-service"
+    container_name: "order"
+    ports:
+      - 9002:9002
+      - 8002:8002
+    environment:
+      - SERVER_PORT=9002
+      # Buildpacks environment variable to enable debug through a socket on port 8002
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8002
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  restaurant:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+      - kafka-manager
+    image: "restaurant-service"
+    container_name: "restaurant"
+    ports:
+      - 9003:9003
+      - 8003:8003
+    environment:
+      - SERVER_PORT=9003
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8003
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+
+  payment:
+    depends_on:
+      - order-keycloak
+      - order-postgres
+      - kafka-manager
+    image: "payment-service"
+    container_name: "payment"
+    ports:
+      - 9004:9004
+      - 8004:8004
+    environment:
+      - SERVER_PORT=9004
+      - BPL_JVM_THREAD_COUNT=50
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8004
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+  
+  gateway:
+    depends_on:
+      - order-keycloak
+      - order-redis
+      - kafka-manager
+    image: "gateway-service"
+    container_name: "gateway"
+    ports:
+      - 9000:9000
+      - 8000:8000
+    environment:
+      - SERVER_PORT=9000
+      # Buildpacks environment variable to enable debug through a socket on port 8000
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8000
+      - CUSTOMER_SERVICE_URL=http://customer:9001
+      - ORDER_SERVICE_URL=http://order:9002
+      - SPRING_REDIS_HOST=order-redis
+      - SPRING_KEYCLOAK_SERVER_URL=http://order-keycloak:8080
+      - SPRING_KEYCLOAK_SERVER_EXTERNAL_URL=http://localhost:8080
+  
+  # Backing Services
+
+  order-postgres:
+    image: "postgres:14.4"
+    container_name: "order-postgres"
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+    volumes:
+      - ./docker-conf/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  order-redis:
+    image: "redis:7.0"
+    container_name: "order-redis"
+    ports:
+      - 6379:6379
+
+  keycloak-postgres:
+    image: postgres:15.3
+    container_name: keycloak_postgres
+    ports:
+      - "5433:5433"
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: "pg_isready -U postgres"
+  
+  order-keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: order-keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=keycloak-postgres
+      - KC_DB_URL_DATABASE=keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=password
+      - KC_DB_PORT=5433
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8080:8080"
+    command: start-dev
+    depends_on:
+      - keycloak-postgres
+    healthcheck:
+      test: "curl -f http://order-keycloak:8080/health/ready || exit 1"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.1.0
+    platform: linux/amd64
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok"
+    volumes:
+      - "./volumes/zookeeper/data:/var/lib/zookeeper/data"
+      - "./volumes/zookeeper/transactions:/var/lib/zookeeper/log"
+
+  broker:
+    image: confluentinc/cp-server:7.1.0
+    platform: linux/amd64
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+    volumes:
+      - "./volumes/kafka/broker:/var/lib/kafka/data"
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.1.0
+    platform: linux/amd64
+    hostname: schema-registry
+    depends_on:
+      - zookeeper
+      - broker
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:29092,LISTENER_LOCAL://localhost:9092
+      SCHEMA_REGISTRY_DEBUG: 'true'
+
+
+  kafka-manager:
+    image: hlebalbau/kafka-manager:stable
+    platform: linux/amd64
+    depends_on:
+      - init-kafka
+    restart: always
+    ports:
+      - "9010:9010"
+    environment:
+      ZK_HOSTS: "zookeeper:2181"
+
+
+  init-kafka:
+    image: confluentinc/cp-kafka:7.1.0
+    platform: linux/amd64
+    depends_on:
+      - schema-registry
+      - broker
+      - zookeeper
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # block until kafka is reachable
+      kafka-topics --bootstrap-server broker:29092 --list
+
+      echo -e 'Deleting kafka topics'
+      kafka-topics --bootstrap-server broker:29092 --topic payment-request --delete --if-exists
+      kafka-topics --bootstrap-server broker:29092 --topic payment-response --delete --if-exists
+      kafka-topics --bootstrap-server broker:29092 --topic restaurant-approval-request --delete --if-exists
+      kafka-topics --bootstrap-server broker:29092 --topic restaurant-approval-response --delete --if-exists
+      kafka-topics --bootstrap-server broker:29092 --topic customer --delete --if-exists
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic payment-request --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic payment-response --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic restaurant-approval-request --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic restaurant-approval-response --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic customer --replication-factor 1 --partitions 1
+
+
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server broker:29092 --list
+      "
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - init-kafka
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:29092
+      - DYNAMIC_CONFIG_ENABLED=true

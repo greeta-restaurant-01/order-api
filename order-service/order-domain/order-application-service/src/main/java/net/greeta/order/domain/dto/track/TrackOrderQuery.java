@@ -1,0 +1,16 @@
+package net.greeta.order.domain.dto.track;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+import jakarta.validation.constraints.NotNull;
+import java.util.UUID;
+
+@Getter
+@Builder
+@AllArgsConstructor
+public class TrackOrderQuery {
+    @NotNull
+    private final UUID orderTrackingId;
+}

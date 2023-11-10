@@ -1,6 +1,6 @@
 docker-compose down
 
-mvn clean install
+mvn clean install -DskipTests
 
 cd customer-service/customer-container
 mvn spring-boot:build-image -DskipTests \
@@ -22,9 +22,6 @@ cd ../../gateway-service
 mvn spring-boot:build-image -DskipTests \
   -Dspring-boot.build-image.imageName=gateway-service
 
-cd ../docker-compose
+cd ../
 
-export GLOBAL_NETWORK=order-network
-export KAFKA_VERSION=7.5.1
-
-docker-compose -f common.yml -f zookeeper.yml -f kafka_cluster.yml -f init_kafka.yml -f app.yml up -d
+docker-compose up -d
