@@ -4,10 +4,12 @@ CREATE SCHEMA restaurant;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-DROP TYPE IF EXISTS approval_status CASCADE;
+DROP TYPE IF EXISTS approval_status;
+
 CREATE TYPE approval_status AS ENUM ('APPROVED', 'REJECTED');
 
-DROP TYPE IF EXISTS outbox_status CASCADE;
+DROP TYPE IF EXISTS outbox_status;
+
 CREATE TYPE outbox_status AS ENUM ('STARTED', 'COMPLETED', 'FAILED');
 
 DROP TABLE IF EXISTS restaurant.restaurants CASCADE;

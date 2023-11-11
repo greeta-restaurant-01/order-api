@@ -9,20 +9,21 @@ sh docker-start.sh
 
 - this script will build docker images and start environment with your code changes
 
-- Warning! Make sure that all kafka containers are successful are started successfully!
-- Check containers in the following order:
--- `Kafka Server (cp-server)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
--- `Init Kafka (cp-kafka)`: container should finish creation of kafka topics successfully and then stop. If container is not responding or has errors, remove container (docker stop, docker rm ) and run `docker-compose up -d` again
--- `Schema Registry (cp-schema-registry)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
--- If everything is cussessful, containers `cp-server` and `cp-schema-registry` should be running without errors and container `cp-kafka` should finish its job and exit without errors.
+- Warning! Make sure that all kafka containers are successful are started successfully! (see `Kafka Containers Troublesshooting` below)
 
-- open `localhost:9000` in your Browser and switch between `Order` and `Catalog` Microservices
+- open `localhost:9000` in your Browser and switch between `Order` and `Customer` Microservices
 
 - Warning! If Swagger UI fails to load on the first try, please, refresh the page!
 
-- click "Authorize" and use admin/admin or user/user for credential (clientId should be `book-app`)
+- Warning! Sometimes switching between `Order` and `Customer` doesn't refresh Swagger UI completely and you might see wrong REST endpoints: just refresh the page and continue
 
-- try to create Order with existing book isbn and make sure that status is ACCEPTED
+- click "Authorize" and use admin/admin or user/user for credentials (clientId should be `order-app`)
+
+- create Customer on `Customer` page (see `json-files/customer.json` as example)
+
+- create Order on `Order` page (see `json-files/order.json` as example: restaurants with these ids are already created with sql init scripts)
+
+- Warning! If Kafka or Schema Registry has errors, you will see error "Customer with this id doesn't exist", because customer, created in the previous step, was not propagated by Kafka. Please, make sure that your Kafka Containers are running correctly (see  `Kafka Containers Troublesshooting`)
 
 - load the orders and make sure that your created order has status DISPATCHED (it means that dispatcher service has received the message and changed the status of the order)
 
@@ -38,3 +39,12 @@ sh docker-start.sh
 ```
 kubectl port-forward 8002:8002
 ```
+
+
+#### Kafka Containers Troubleshooting
+
+- Check containers in the following order:
+- `Kafka Server (cp-server)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+- `Init Kafka (cp-kafka)`: container should finish creation of kafka topics successfully and then stop. If container is not responding or has errors, remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+- `Schema Registry (cp-schema-registry)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+- If everything is cussessful, containers `cp-server` and `cp-schema-registry` should be running without errors and container `cp-kafka` should finish its job and exit without errors.
