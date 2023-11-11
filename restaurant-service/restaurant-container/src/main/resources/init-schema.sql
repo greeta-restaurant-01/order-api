@@ -4,6 +4,12 @@ CREATE SCHEMA restaurant;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+DROP TYPE IF EXISTS approval_status CASCADE;
+CREATE TYPE approval_status AS ENUM ('APPROVED', 'REJECTED');
+
+DROP TYPE IF EXISTS outbox_status CASCADE;
+CREATE TYPE outbox_status AS ENUM ('STARTED', 'COMPLETED', 'FAILED');
+
 DROP TABLE IF EXISTS restaurant.restaurants CASCADE;
 
 CREATE TABLE restaurant.restaurants
@@ -13,10 +19,6 @@ CREATE TABLE restaurant.restaurants
     active boolean NOT NULL,
     CONSTRAINT restaurants_pkey PRIMARY KEY (id)
 );
-
-DROP TYPE IF EXISTS approval_status CASCADE;
-
-CREATE TYPE approval_status AS ENUM ('APPROVED', 'REJECTED');
 
 DROP TABLE IF EXISTS restaurant.order_approval CASCADE;
 
@@ -63,9 +65,6 @@ ALTER TABLE restaurant.restaurant_products
     ON UPDATE NO ACTION
     ON DELETE RESTRICT
     NOT VALID;
-
-DROP TYPE IF EXISTS outbox_status CASCADE;
-CREATE TYPE outbox_status AS ENUM ('STARTED', 'COMPLETED', 'FAILED');
 
 DROP TABLE IF EXISTS restaurant.order_outbox CASCADE;
 

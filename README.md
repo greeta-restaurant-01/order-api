@@ -9,6 +9,13 @@ sh docker-start.sh
 
 - this script will build docker images and start environment with your code changes
 
+- Warning! Make sure that all kafka containers are successful are started successfully!
+- Check containers in the following order:
+-- `Kafka Server (cp-server)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+-- `Init Kafka (cp-kafka)`: container should finish creation of kafka topics successfully and then stop. If container is not responding or has errors, remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+-- `Schema Registry (cp-schema-registry)`: if container has errors or stopped responding (check the logs), remove container (docker stop, docker rm ) and run `docker-compose up -d` again
+-- If everything is cussessful, containers `cp-server` and `cp-schema-registry` should be running without errors and container `cp-kafka` should finish its job and exit without errors.
+
 - open `localhost:9000` in your Browser and switch between `Order` and `Catalog` Microservices
 
 - Warning! If Swagger UI fails to load on the first try, please, refresh the page!
