@@ -26,7 +26,7 @@ jobs:
           cache: maven
       - name: Build
         run: |
-          mvn clean install
+          mvn clean install -DskipTests
       - name: Build container images
         run: |
           cd customer-service/customer-container

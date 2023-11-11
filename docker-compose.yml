@@ -212,23 +212,12 @@ services:
     ports:
       - "8081:8081"
     environment:
+      SERVER_PORT: 8081
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:29092,LISTENER_LOCAL://localhost:9092
       SCHEMA_REGISTRY_DEBUG: 'true'
-
-
-  kafka-manager:
-    image: hlebalbau/kafka-manager:stable
-    platform: linux/amd64
-    depends_on:
-      - init-kafka
-    restart: always
-    ports:
-      - "9010:9010"
-    environment:
-      ZK_HOSTS: "zookeeper:2181"
 
 
   init-kafka:

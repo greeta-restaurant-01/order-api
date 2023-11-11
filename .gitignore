@@ -53,5 +53,7 @@ target/
 .project
 .springBeans
 src/main/resources/static/
+volumes/
+**/volumes/**
 
 ### Test ##

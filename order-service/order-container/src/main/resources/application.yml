@@ -100,7 +100,7 @@ order-service:
 kafka-config:
   bootstrap-servers: broker:29092
   schema-registry-url-key: schema.registry.url
-  schema-registry-url: http://localhost:8081
+  schema-registry-url: http://schema-registry:8081
   num-of-partitions: 1
   replication-factor: 1
 
