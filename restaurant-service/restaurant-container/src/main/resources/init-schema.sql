@@ -14,7 +14,7 @@ CREATE TABLE restaurant.restaurants
     CONSTRAINT restaurants_pkey PRIMARY KEY (id)
 );
 
-DROP TYPE IF EXISTS approval_status;
+DROP TYPE IF EXISTS approval_status CASCADE;
 
 CREATE TYPE approval_status AS ENUM ('APPROVED', 'REJECTED');
 
