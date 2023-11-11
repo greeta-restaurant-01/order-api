@@ -10,7 +10,7 @@ server:
 
 spring:
   application:
-    name: payment
+    name: restaurant
   lifecycle:
     timeout-per-shutdown-phase: 15s
 
@@ -39,7 +39,7 @@ logging:
     org.springframework.security: DEBUG
 
 info:
-  system: Payment Service
+  system: Restaurant Service
 
 management:
   endpoints:

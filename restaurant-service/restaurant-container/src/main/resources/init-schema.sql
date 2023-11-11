@@ -8,7 +8,7 @@ DROP TYPE IF EXISTS approval_status;
 
 CREATE TYPE approval_status AS ENUM ('APPROVED', 'REJECTED');
 
-DROP TYPE IF EXISTS outbox_status;
+DROP TYPE IF EXISTS outbox_status CASCADE;
 
 CREATE TYPE outbox_status AS ENUM ('STARTED', 'COMPLETED', 'FAILED');
 

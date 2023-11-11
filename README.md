@@ -25,9 +25,15 @@ sh docker-start.sh
 
 - Warning! If Kafka or Schema Registry has errors, you will see error "Customer with this id doesn't exist", because customer, created in the previous step, was not propagated by Kafka. Please, make sure that your Kafka Containers are running correctly (see  `Kafka Containers Troublesshooting`)
 
-- load the orders and make sure that your created order has status DISPATCHED (it means that dispatcher service has received the message and changed the status of the order)
+- if order is created successfully you will receive 200 response with `tracking_id`
 
-- See this README file for AWS Infrastructure Setup: **https://github.com/greeta-book-01/book-infra**
+- find the order by `tracking_id` copied from the previous response. 
+
+- If you see the order and it has status `PAID`, then Kafka is configured correctly.
+
+- Congratulations! You successfuly tested `Food Ordering System` Saga transactions and CQRS!
+
+- See this README file for AWS Infrastructure Setup: **https://github.com/greeta-restaurant-01/order-infra**
 
 
 ### Remote Debugging
