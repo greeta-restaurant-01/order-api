@@ -6,7 +6,7 @@ services:
     depends_on:
       - order-keycloak
       - order-postgres
-      - kafka-manager
+      - kafka-ui
     image: "customer-service"
     container_name: "customer"
     ports:
@@ -24,7 +24,7 @@ services:
     depends_on:
       - order-keycloak
       - order-postgres
-      - kafka-manager
+      - kafka-ui
     image: "order-service"
     container_name: "order"
     ports:
@@ -42,7 +42,7 @@ services:
     depends_on:
       - order-keycloak
       - order-postgres
-      - kafka-manager
+      - kafka-ui
     image: "restaurant-service"
     container_name: "restaurant"
     ports:
@@ -60,7 +60,7 @@ services:
     depends_on:
       - order-keycloak
       - order-postgres
-      - kafka-manager
+      - kafka-ui
     image: "payment-service"
     container_name: "payment"
     ports:
@@ -78,7 +78,7 @@ services:
     depends_on:
       - order-keycloak
       - order-redis
-      - kafka-manager
+      - kafka-ui
     image: "gateway-service"
     container_name: "gateway"
     ports:
@@ -105,8 +105,6 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=admin
-    volumes:
-      - ./docker-conf/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   order-redis:
     image: "redis:7.0"
