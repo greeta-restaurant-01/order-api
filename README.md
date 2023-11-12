@@ -1,5 +1,5 @@
 ### AWS Startup Template For Spring Boot Developers
-#### Welcome to AWS Full-Stack Developer Template: Swagger UI + Spring Boot + Terraform + Kubernetes + Kafka Event Streaming + Kafka UI + Event-Driven Microservices + Saga Transations + CQRS + DDD + Clean Code + Outbox Pattern + Keycloak Oauth2 Authorization Server + Github Actions + Local Docker Build and Start Environment + Remote Debugging + Spring Cloud Gateway + Spring Cloud Stream + Dispatcher Pattern + AWS SSL Certificate + External DNS + AWS Load Balancer Controller + Spring Cloud Kubernetes + Grafana Observability Stack
+#### Welcome to AWS Full-Stack Developer Template: Swagger UI + Spring Boot + Terraform + Kubernetes + Kafka Event Streaming + Kafka UI + Event-Driven Microservices + Saga Transations + CQRS + DDD + Clean Code + Hexagonal Architecture + Ports and Adapters + Outbox Pattern + Keycloak Oauth2 Authorization Server + Github Actions + Local Docker Build and Start Environment + Remote Debugging + Spring Cloud Gateway + Spring Cloud Stream + Dispatcher Pattern + AWS SSL Certificate + External DNS + AWS Load Balancer Controller + Spring Cloud Kubernetes + Grafana Observability Stack
 
 #### Local Docker Environment Setup:
 
