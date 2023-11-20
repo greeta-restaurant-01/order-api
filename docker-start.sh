@@ -1,3 +1,5 @@
+# rebuild and start
+
 docker-compose down
 
 mvn clean install -DskipTests
